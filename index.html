@@ -294,7 +294,7 @@ function applyFilters() {
   });
 
   if (sf === "total") {
-    f.sort(function(a,b) { return tierOrder.indexOf(a[1]) - tierOrder.indexOf(b[1]) || a[2] - b[2]; });
+    f.sort(function(a,b) { var tc = tierOrder.indexOf(a[1]) - tierOrder.indexOf(b[1]); return tc !== 0 ? tc : (sd === "desc" ? b[2] - a[2] : a[2] - b[2]); });
   }
 
   render(f);
