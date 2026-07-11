@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "buildCommand": null,
+  "devCommand": null,
+  "functions": {
+    "api/update.js": {
+      "maxDuration": 30
+    }
+  }
+}
