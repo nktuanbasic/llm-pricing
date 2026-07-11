@@ -129,9 +129,13 @@ tr:hover td{background:#1e293b40}
     <option value="total-asc">Sap xep: Gia tang</option>
     <option value="total-desc">Gia giam</option>
     <option value="arena-desc">Arena giam</option>
+    <option value="arena">Arena tang</option>
     <option value="swe-desc">SWE giam</option>
+    <option value="swe">SWE tang</option>
     <option value="livecode-desc">LiveCode giam</option>
+    <option value="livecode">LiveCode tang</option>
     <option value="aa-desc">AA giam</option>
+    <option value="aa">AA tang</option>
     <option value="name">Ten A-Z</option>
   </select>
   <span class="count" id="count">34 models</span>
@@ -361,9 +365,15 @@ function sortTable(col) {
   var headers = document.querySelectorAll("#tbl th");
   headers.forEach(function(h) { h.classList.remove("active"); });
   headers[col].classList.add("active");
-  var map = {0:"name",1:"total",2:"total",3:"total",4:"total",5:"name",6:"name",7:"name",
-    8:"name",9:"arena-desc",10:"swe-desc",11:"livecode-desc",12:"aa-desc",13:"name"};
-  document.getElementById("sortBy").value = map[col] || "total-asc";
+  var sel = document.getElementById("sortBy");
+  var cur = sel.value;
+  var map = {0:"name",1:"total-asc",2:"total-asc",3:"total-asc",4:"total-asc",
+    5:"name",6:"name",7:"name",8:"name",9:"arena-desc",10:"swe-desc",
+    11:"livecode-desc",12:"aa-desc",13:"name"};
+  var v = map[col] || "total-asc";
+  var toggles = {0:"name",1:"total-desc",2:"total-desc",3:"total-desc",4:"total-desc",
+    5:"name",6:"name",7:"name",8:"name",9:"arena",10:"swe",11:"livecode",12:"aa",13:"name"};
+  sel.value = cur === v ? (toggles[col] || v) : v;
   applyFilters();
 }
 
