@@ -2,51 +2,79 @@
 // Cập nhật: July 2026
 const FALLBACK = require('./data.json');
 
+const MODELS = {
+    'gemini-3-flash':     { name: 'Gemini 3 Flash',     provider: 'gemini' },
+    'gemini-3.5-flash':   { name: 'Gemini 3.5 Flash',   provider: 'gemini' },
+    'gemini-2.5-flash':   { name: 'Gemini 2.5 Flash',   provider: 'gemini' },
+    'gemma-4-31b-it':     { name: 'Gemma 4 31B',        provider: 'gemini' }
+};
+
 module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
+    if (req.method === 'OPTIONS') return res.status(200).end();
+
+    let selectedModel = null;
+    if (req.method === 'POST' && req.body && req.body.model) {
+        selectedModel = req.body.model;
     }
 
-    // Thử fetch live từ providers, fallback về data.json nếu fail
-    const sources = await Promise.allSettled([
-        fetchGeminiPricing(),
-        fetchOpenAIPricing(),
-        fetchAnthropicPricing(),
-        fetchXAIPricing()
-    ]);
+    try {
+        // Nếu chọn 1 model cụ thể → scrape riêng provider đó
+        // Nếu không → scrape tất cả
+        let liveData = [];
+        let sources = [];
 
-    const liveData = [];
-    const errors = [];
-
-    sources.forEach((s, i) => {
-        const name = ['gemini', 'openai', 'anthropic', 'xai'][i];
-        if (s.status === 'fulfilled' && Array.isArray(s.value) && s.value.length) {
-            liveData.push(...s.value);
-        } else {
-            errors.push(`${name}: ${s.reason?.message || 'no data'}`);
+        if (selectedModel && MODELS[selectedModel]) {
+                    const cfg = MODELS[selectedModel];
+                    try {
+                        const rows = await fetchAllGemini();
+                        liveData.push(...rows);
+                        sources.push({ name: cfg.provider, ok: true });
+                    } catch (e) {
+                        sources.push({ name: cfg.provider, ok: false, error: e.message });
+                    }
+                } else {
+            const all = await Promise.allSettled([
+                fetchAllGemini(),
+                fetchOpenAIPricing(),
+                fetchAnthropicPricing(),
+                fetchXAIPricing()
+            ]);
+            const names = ['gemini', 'openai', 'anthropic', 'xai'];
+            all.forEach((s, i) => {
+                if (s.status === 'fulfilled' && Array.isArray(s.value) && s.value.length) {
+                    liveData.push(...s.value);
+                    sources.push({ name: names[i], ok: true });
+                } else {
+                    sources.push({ name: names[i], ok: false, error: s.reason?.message });
+                }
+            });
         }
-    });
 
-    // Nếu fetch live thành công ít nhất 1 provider, dùng live + fallback merge
-    // Ngược lại dùng hoàn toàn fallback
-    const finalData = liveData.length > 0 ? mergeData(liveData, FALLBACK) : FALLBACK;
-    const mode = liveData.length > 0 ? 'live_with_fallback' : 'fallback_only';
+        const finalData = liveData.length > 0 ? mergeData(liveData, FALLBACK) : FALLBACK;
+        const mode = liveData.length > 0 ? (selectedModel ? 'live_single_model' : 'live_multi_provider') : 'fallback_only';
 
-    return res.status(200).json({
-        updated: new Date().toISOString(),
-        source: 'multi_provider_live_fetch',
-        mode: mode,
-        live_sources: sources.map((s, i) => ({
-            name: ['gemini', 'openai', 'anthropic', 'xai'][i],
-            ok: s.status === 'fulfilled' && Array.isArray(s.value) && s.value.length > 0
-        })),
-        errors: errors.length ? errors : null,
-        count: finalData.length,
-        data: finalData
-    });
+        return res.status(200).json({
+            updated: new Date().toISOString(),
+            source: selectedModel ? MODELS[selectedModel].name : 'multi_provider_live',
+            mode: mode,
+            sources: sources,
+            count: finalData.length,
+            data: finalData
+        });
+    } catch (err) {
+        // Last resort: fallback data
+        return res.status(200).json({
+            updated: new Date().toISOString(),
+            source: 'fallback',
+            mode: 'fallback_only',
+            error: err.message,
+            count: FALLBACK.length,
+            data: FALLBACK
+        });
+    }
 };
 
 function tierOf(total) {
@@ -58,7 +86,7 @@ function tierOf(total) {
 }
 
 // Fetch Gemini pricing từ official docs (HTML scrape)
-async function fetchGeminiPricing() {
+async function fetchAllGemini() {
     try {
         const r = await fetch('https://ai.google.dev/gemini-api/docs/pricing', {
             headers: { 'User-Agent': 'Mozilla/5.0' },

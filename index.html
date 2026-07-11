@@ -83,6 +83,12 @@ tr:hover td{background:#1e293b40}
 </div>
 
 <div class="update-panel">
+  <select id="updateModel" style="padding:6px 10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px">
+    <option value="gemini-3-flash">Gemini 3 Flash</option>
+    <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+    <option value="gemma-4-31b-it">Gemma 4 31B</option>
+  </select>
   <button class="btn-update" id="btnUpdate" onclick="doUpdate()">Cập nhật dữ liệu</button>
   <span class="update-status" id="updateStatus"></span>
 </div>
@@ -307,7 +313,8 @@ async function doUpdate() {
   setStatus("Dang cap nhat...", "spin");
 
   try {
-      var res = await fetch("/api/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      var model = document.getElementById("updateModel").value;
+      var res = await fetch("/api/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({model:model}) });
     var result = await res.json();
 
     if (!res.ok) {
