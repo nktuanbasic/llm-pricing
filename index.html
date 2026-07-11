@@ -12,9 +12,6 @@ h1{font-size:22px;color:#f8fafc}
 .sub{color:#94a3b8;font-size:13px;margin-bottom:16px}
 .sub .updated{color:#64748b;font-size:11px}
 .update-panel{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 16px;background:#1e293b;border-radius:12px;margin-bottom:16px;border:1px solid #334155}
-.update-panel label{font-size:13px;color:#94a3b8;white-space:nowrap}
-.update-panel input[type=password]{flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none}
-.update-panel input[type=password]:focus{border-color:#6366f1}
 .update-panel button{padding:8px 20px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
 .btn-update{background:#6366f1;color:#fff}
 .btn-update:hover{background:#4f46e5}
@@ -69,7 +66,6 @@ tr:hover td{background:#1e293b40}
   .filters{gap:6px}
   .count{display:none}
   .update-panel{flex-direction:column}
-  .update-panel input[type=password]{width:100%}
   .header{flex-direction:column;gap:8px}
 }
 </style>
@@ -87,9 +83,7 @@ tr:hover td{background:#1e293b40}
 </div>
 
 <div class="update-panel">
-  <label for="geminiKey">Gemini API Key:</label>
-  <input type="password" id="geminiKey" placeholder="AIza..." autocomplete="off">
-  <button class="btn-update" id="btnUpdate" onclick="doUpdate()">Cập nhật</button>
+  <button class="btn-update" id="btnUpdate" onclick="doUpdate()">Cập nhật dữ liệu</button>
   <span class="update-status" id="updateStatus"></span>
 </div>
 
@@ -304,19 +298,12 @@ function applyFilters() {
 }
 
 async function doUpdate() {
-  var key = document.getElementById("geminiKey").value.trim();
-  if (!key) { setStatus("Nhap Gemini API key truoc!", "error"); return; }
-
   var btn = document.getElementById("btnUpdate");
   btn.disabled = true;
   setStatus("Dang cap nhat...", "spin");
 
   try {
-    var res = await fetch("/api/update", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey: key })
-    });
+    var res = await fetch("/api/update", { method: "POST", headers: { "Content-Type": "application/json" } });
     var result = await res.json();
 
     if (!res.ok) {

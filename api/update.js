@@ -3,9 +3,10 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { apiKey } = req.body || {};
+    // Use env var GEMINI_API_KEY set in Vercel, or accept from request body
+    const apiKey = process.env.GEMINI_API_KEY || (req.body?.apiKey);
     if (!apiKey) {
-        return res.status(400).json({ error: 'Missing Gemini API key' });
+        return res.status(400).json({ error: 'Missing GEMINI_API_KEY env var on server' });
     }
 
     const model = req.body.model || 'gemini-3.1-flash-lite';
